@@ -31,20 +31,19 @@ class Module:
 
     def train(self) -> None:
         "Set the mode of this module and all descendent modules to `train`."
-        self.training = True
-        for m in self.modules():
-            m.training = True
-            
+        def set_train(current_module):
+            current_module.training = True
+            for m in current_module.modules():
+                set_train(m)
+        set_train(self) 
+
     def eval(self) -> None:
         "Set the mode of this module and all descendent modules to `eval`."
-        self.training = False
-        for m in self.modules():
-            m.training = False
-
-    def iterate_module(self):
-            yield self
-            for child in self.modules():
-                yield from child.iterate_module()  
+        def set_eval(current_module):
+            current_module.training = False
+            for m in current_module.modules():
+                set_eval(m)
+        set_eval(self)
 
     def named_parameters(self) -> Sequence[Tuple[str, Parameter]]:
         """
@@ -54,21 +53,16 @@ class Module:
         Returns:
             The name and `Parameter` of each ancestor parameter.
         """
-        def iterate_module(module: Module):
-            yield module
-            for child in module.modules():
-                yield from iterate_module(child)
-
-        modules = [parameter for parameter in self.iterate_module()]
-        # iterate and also add from submodule.
-        # for sub_module in self.modules():
-        #    named_parameters += [(name, parameter) for name, parameter in sub_module._parameters.items()]
-        # return named_parameters
-        return [(name, parameter) for module in modules for name, parameter in module._parameters.items()]
-
+        def collect(current_module, prefix=""):
+            for name, parameter in current_module._parameters.items():
+                yield prefix + name, parameter
+            for name, module in current_module._modules.items():
+                yield from collect(module, prefix + name + ".")
+        return list(collect(self))
+        
     def parameters(self) -> Sequence[Parameter]:
         "Enumerate over all the parameters of this module and its descendents."
-        return [param[1] for param in self.named_parameters()]
+        return [param for _, param in self.named_parameters()]
 
     def add_parameter(self, k: str, v: Any) -> Parameter:
         """
