@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple, Callable
 
 
 class Module:
@@ -31,13 +31,20 @@ class Module:
 
     def train(self) -> None:
         "Set the mode of this module and all descendent modules to `train`."
-        # TODO: Implement for Task 0.4.
-        raise NotImplementedError("Need to implement for Task 0.4")
-
+        self.training = True
+        for m in self.modules():
+            m.training = True
+            
     def eval(self) -> None:
         "Set the mode of this module and all descendent modules to `eval`."
-        # TODO: Implement for Task 0.4.
-        raise NotImplementedError("Need to implement for Task 0.4")
+        self.training = False
+        for m in self.modules():
+            m.training = False
+
+    def iterate_module(self):
+            yield self
+            for child in self.modules():
+                yield from child.iterate_module()  
 
     def named_parameters(self) -> Sequence[Tuple[str, Parameter]]:
         """
@@ -47,13 +54,21 @@ class Module:
         Returns:
             The name and `Parameter` of each ancestor parameter.
         """
-        # TODO: Implement for Task 0.4.
-        raise NotImplementedError("Need to implement for Task 0.4")
+        def iterate_module(module: Module):
+            yield module
+            for child in module.modules():
+                yield from iterate_module(child)
+
+        modules = [parameter for parameter in self.iterate_module()]
+        # iterate and also add from submodule.
+        # for sub_module in self.modules():
+        #    named_parameters += [(name, parameter) for name, parameter in sub_module._parameters.items()]
+        # return named_parameters
+        return [(name, parameter) for module in modules for name, parameter in module._parameters.items()]
 
     def parameters(self) -> Sequence[Parameter]:
         "Enumerate over all the parameters of this module and its descendents."
-        # TODO: Implement for Task 0.4.
-        raise NotImplementedError("Need to implement for Task 0.4")
+        return [param[1] for param in self.named_parameters()]
 
     def add_parameter(self, k: str, v: Any) -> Parameter:
         """
