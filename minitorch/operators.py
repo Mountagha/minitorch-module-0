@@ -184,7 +184,7 @@ def reduce(
     def accumulate(ls):
         acc = start
         for elt in ls:
-            acc += elt
+            acc = fn(acc, elt)
         return acc
 
     return accumulate
